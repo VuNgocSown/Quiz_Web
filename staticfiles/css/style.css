@@ -1,0 +1,76 @@
+* {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+body {
+    background-image: url("../images/Bg1.jpg"); 
+    background-size: cover;
+    background-repeat: no-repeat; 
+    background-attachment: fixed;
+    background-position: center; 
+}
+
+footer {
+    background-color: #ffffff !important;
+    width: 100%;
+}
+
+.navbar {
+    background-color: #b5a6a6 !important;
+}
+
+
+.carousel-inner {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Căn giữa theo chiều ngang */
+    align-items: center; /* Căn giữa theo chiều dọc nếu cần */
+}
+
+.carousel-item {
+    width: 50%; /* Điều chỉnh chiều rộng của slide */
+    height: 50%; /* Điều chỉnh chiều cao của slide */
+    -webkit-background-size: cover;
+    background-size: cover;
+    margin: 0 auto;
+    display: none; /* Ẩn tất cả các slide */
+}
+
+.carousel-item.active {
+    display: flex; /* Hiển thị slide đang hoạt động */
+    justify-content: center; /* Căn giữa theo chiều ngang */
+    align-items: center; /* Căn giữa theo chiều dọc */
+}
+
+/* slide */
+@keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(calc(-250px * 7)); }
+}
+
+.slider {
+    background:#fefefe;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, .125);
+    height: 7mm;
+    margin: auto;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.slide-track {
+    animation: scroll 40s linear infinite; /* Sử dụng giá trị cố định cho animation */
+    display: flex;
+    width: calc(250px * 14);
+}
+
+.slide {
+    height: 7mm;
+    width: 100%;
+}
+.slide img {
+    height: 100%; /* Đặt chiều cao của hình ảnh bằng với chiều cao của slide */
+    width: auto; /* Đặt chiều rộng tự động để giữ tỷ lệ */
+    object-fit: contain; /* Đảm bảo hình ảnh vừa với khung mà không bị biến dạng */
+}
+/* custom.css */

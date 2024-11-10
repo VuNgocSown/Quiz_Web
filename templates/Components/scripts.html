@@ -1,0 +1,16 @@
+<script>
+    let accountCreationTaskId = null;
+    let accountCreationInterval = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        accountCreationTaskId = localStorage.getItem('accountCreationTaskId');
+        if (accountCreationTaskId) {
+            startAccountCreationProgressPolling();
+            showLoadingMessage();
+        }
+    });
+
+    // Include the functions: startAccountCreationProgressPolling, checkAccountCreationProgress,
+    // showLoadingMessage, updateLoadingMessage, hideLoadingMessage
+    // [Copy the same functions as in AccountManagement.html]
+</script>

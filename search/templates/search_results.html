@@ -1,0 +1,25 @@
+    <!-- search/templates/search_results.html -->
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Search Results</title>
+    </head>
+    <body>
+        <h1>Search Results</h1>
+        <form method="get" action="{% url 'search' %}">
+            {{ form.as_p }}
+            <button type="submit">Search</button>
+        </form>
+        <h2>Videos</h2>
+        <ul>
+            {% for video in videos %}
+                <li>
+                    <h3>{{ video.title }}</h3>
+                    <div>{{ video.iframe|safe }}</div>
+                </li>
+            {% empty %}
+                <li>No videos found.</li>
+            {% endfor %}
+        </ul>
+    </body>
+    </html>

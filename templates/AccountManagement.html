@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    {% include "Components/navbar_loged_in.html" %}
+
+    <div class="container mt-4">
+        <!-- Messages block -->
+        {% if messages %}
+        <div class="alert alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between mb-3">
+            <!-- Add this button to trigger the modal -->
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">Add Account</button>
+
+        <!-- Modal Structure -->
+        <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                <h5 class="modal-title" id="addAccountModalLabel">Add Accounts</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!-- In AccountManagement.html, add this hidden button -->
+                <div class="modal-body">
+                <!-- File upload input -->
+                <div class="mb-3">
+                    <label for="excelFile" class="form-label">Upload Excel File</label>
+                    <input class="form-control" type="file" id="excelFile" name="excel_file" accept=".xlsx, .xls">
+                </div>
+                <!-- Preview table -->
+                <div id="previewTable" style="max-height: 400px; overflow-y: auto;">
+                    <!-- The table will be injected here via JavaScript -->
+                </div>
+                </div>
+                <div class="modal-footer">
+                <!-- Add Accounts button -->
+                <button type="button" class="btn btn-success" id="createAccountsBtn" style="display:none;" onclick="confirmAddAccounts();">Add Accounts</button>
+                </div>
+            </form>
+            </div>
+        </div>
+        </div>
+            <form class="d-flex" method="GET" action="{% url 'account_management' %}">
+                <input class="form-control me-2" type="search" placeholder="Search by username, student ID, class, full name..." aria-label="Search" name="query">
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+        </div>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Student ID</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.profile.studen_id }}</td>
+                    <td>{{ user.profile.user_class }}</td>
+                    <td>
+                        {% if not user.is_staff and not user.is_superuser %}
+                        <form method="POST" action="{% url 'delete_user' user.id %}" onsubmit="return confirmDelete(this, '{{ captcha }}', '{{ user.username }}', '{{ user.first_name }} {{ user.last_name }}');">
+                            {% csrf_token %}
+                            <input type="hidden" name="captcha">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>        
+    </div>
+
+    {% include "Components/footer.html" %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+        crossorigin="anonymous"></script>
+        <script>
+            function confirmDelete(form, captcha, username, fullName) {
+                const message = `Please enter the captcha code to confirm deletion of user ${username} (${fullName}):\n\n` +
+                                `${captcha}`;
+                const userCaptcha = prompt(message, '');
+                if (userCaptcha) {
+                    form.elements['captcha'].value = userCaptcha;
+                    return true;
+                }
+                return false;
+            }
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                let accountCreationTaskId = localStorage.getItem('accountCreationTaskId');
+                if (accountCreationTaskId) {
+                    startAccountCreationProgressPolling(accountCreationTaskId);
+                    showLoadingMessage();
+                }
+        
+                // Excel file upload and user list preview
+                document.getElementById('excelFile').addEventListener('change', function() {
+                    var formData = new FormData(document.getElementById('uploadForm'));
+                    fetch("{% url 'upload_excel' %}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            var usersData = data.users_data;
+                            var tableHTML = `<table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Username</th>
+                                        <th>First Name</th>
+                                        <th>Last Name</th>
+                                        <th>Student ID</th>
+                                        <th>Class</th>
+                                        <th>Email</th>
+                                        <th>Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                            usersData.forEach((user, index) => {
+                                tableHTML += `<tr>
+                                    <td>${index + 1}</td>
+                                    <td>${user.username}</td>
+                                    <td>${user.first_name}</td>
+                                    <td>${user.last_name}</td>
+                                    <td>${user.student_id}</td>
+                                    <td>${user.user_class}</td>
+                                    <td>${user.email}</td>
+                                    <td>${user.password}</td>
+                                </tr>`;
+                            });
+                            tableHTML += '</tbody></table>';
+                            document.getElementById('previewTable').innerHTML = tableHTML;
+                            // Show the "Add Accounts" button
+                            document.getElementById('createAccountsBtn').style.display = 'inline-block';
+                            // Save users data to localStorage
+                            localStorage.setItem('usersData', JSON.stringify(usersData));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while processing the file.');
+                    });
+                });
+            });
+        
+            function confirmAddAccounts() {
+                if (confirm('Are you sure you want to create these accounts?')) {
+                    createAccounts();
+                }
+            }
+        
+            function createAccounts() {
+                fetch("{% url 'create_accounts' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.task_id) {
+                        let accountCreationTaskId = data.task_id;
+                        localStorage.setItem('accountCreationTaskId', accountCreationTaskId);
+                        startAccountCreationProgressPolling(accountCreationTaskId);
+                        showLoadingMessage();
+                        // Close the modal
+                        var modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
+                        modal.hide();
+                    } else {
+                        alert('Failed to initiate account creation.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while creating accounts.');
+                });
+            }
+        
+            function startAccountCreationProgressPolling(taskId) {
+                let accountCreationInterval = setInterval(function() {
+                    checkAccountCreationProgress(taskId, accountCreationInterval);
+                }, 1000);
+            }
+        
+            function checkAccountCreationProgress(taskId, interval) {
+                fetch(`{% url 'check_account_creation_progress' %}?task_id=${taskId}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        clearInterval(interval);
+                        localStorage.removeItem('accountCreationTaskId');
+                        hideLoadingMessage();
+                        alert(data.error);
+                    } else {
+                        updateLoadingMessage(data.current, data.total);
+        
+                        if (data.completed) {
+                            clearInterval(interval);
+                            localStorage.removeItem('accountCreationTaskId');
+                            hideLoadingMessage();
+                            // Optionally, reload the page to reflect new accounts
+                            window.location.reload();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    clearInterval(interval);
+                    localStorage.removeItem('accountCreationTaskId');
+                    hideLoadingMessage();
+                    alert('An error occurred while checking progress.');
+                });
+            }
+        
+            function showLoadingMessage() {
+                let loadingDiv = document.getElementById('loading-message');
+                if (!loadingDiv) {
+                    loadingDiv = document.createElement('div');
+                    loadingDiv.id = 'loading-message';
+                    loadingDiv.style.position = 'fixed';
+                    loadingDiv.style.top = '20px';
+                    loadingDiv.style.right = '20px';
+                    loadingDiv.style.zIndex = '9999';
+                    loadingDiv.style.padding = '10px 20px';
+                    loadingDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    loadingDiv.style.color = '#fff';
+                    loadingDiv.style.borderRadius = '5px';
+                    loadingDiv.innerText = 'Creating accounts: 0/0';
+                    document.body.appendChild(loadingDiv);
+                }
+            }
+        
+            function updateLoadingMessage(current, total) {
+                let loadingDiv = document.getElementById('loading-message');
+                if (loadingDiv) {
+                    loadingDiv.innerText = `Creating accounts: ${current}/${total}`;
+                }
+            }
+        
+            function hideLoadingMessage() {
+                let loadingDiv = document.getElementById('loading-message');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+            }
+        </script>
+
+</body>
+</html>
