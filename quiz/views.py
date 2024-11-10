@@ -270,7 +270,7 @@ def create_quiz_from_db(request, class_id):
             num_correct_options = options.filter(is_correct=True).count()
             num_incorrect_options = options.filter(is_correct=False).count()
             print(question.question_text, num_correct_options, num_incorrect_options)
-            if num_correct_options >= 1 or num_incorrect_options >= 3:
+            if num_correct_options >= 1 and num_incorrect_options >= 3:
                 valid_questions.append(question)
         else:
             valid_questions.append(question)
