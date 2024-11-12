@@ -56,7 +56,7 @@ class Question(models.Model):
 class Option(models.Model):
     id = models.AutoField(primary_key=True)
     question_id = models.ForeignKey(Question, on_delete=models.CASCADE)
-    option_text = models.CharField(max_length=255)
+    option_text = models.TextField()
     is_correct = models.BooleanField(default=False)
 
     def __str__(self):
@@ -89,23 +89,6 @@ class StudentAnswer(models.Model):
 
 from django.db import models
 
-class QuestionGen(models.Model):
-    id = models.AutoField(primary_key=True)
-    question_text = models.TextField()
-    topic = models.TextField()  # Thay đổi từ CharField thành TextField
-    subtopic = models.TextField()  # Thay đổi từ CharField thành TextField
-    difficulty = models.IntegerField(default=1)
-    CLO = models.IntegerField(default=1)
-    QUESTION_TYPES = [
-        ('MCQ', 'Multiple Choice Question'),
-        ('FIB', 'Fill in the Blank'),
-    ]
-    question_type = models.CharField(max_length=3, choices=QUESTION_TYPES)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
-
-    def __str__(self):
-        return f'{self.question_text}'
-
 
 # them vao de cho moi de chi duoc phep lam 1 lan voi moi user
 class QuizAttempt(models.Model):
@@ -116,14 +99,6 @@ class QuizAttempt(models.Model):
 
     class Meta:
         unique_together = ('user', 'quiz')
-
-class OptionGen(models.Model):
-    id = models.AutoField(primary_key=True)
-    question_id = models.ForeignKey(QuestionGen, on_delete=models.CASCADE)
-    option_text = models.CharField(max_length=255)
-    is_correct = models.BooleanField(default=False)
-    def __str__(self):
-        return f"{self.option_text}"
 
 
 class FullStudentAnswer(models.Model):

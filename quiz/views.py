@@ -9,8 +9,8 @@ from django.contrib.auth.decorators import login_required
 from allClass.models import MyClass
 # MyClass: model từ ứng dụng allClass
 
-from .models import Quiz, Category, Question, Option, QuizResult, StudentAnswer, QuestionGen, QuizAttempt, OptionGen, FullStudentAnswer
-# Quiz, Category, Question, Option, QuizResult, StudentAnswer, QuestionGen, QuizAttempt, OptionGen, FullStudentAnswer: các model tùy chỉnh của ứng dụng hiện tại
+from .models import Quiz, Category, Question, Option, QuizResult, StudentAnswer, QuizAttempt, FullStudentAnswer
+# Quiz, Category, Question, Option, QuizResult, StudentAnswer , QuizAttempt, FullStudentAnswer: các model tùy chỉnh của ứng dụng hiện tại
 
 from django.db.models import Q, Count
 # Q: dùng để xây dựng các truy vấn phức tạp với các điều kiện logic
@@ -96,7 +96,6 @@ def quiz_view(request, quiz_id):
         request.session['quiz_id'] = quiz_id
     if 'options' in request.session and options != []:
         options = request.session['options']
-        print("in ra")
     else:
         for question in questions:
             correct_option = Option.objects.filter(question_id=question, is_correct=True).order_by('?').first()
@@ -262,19 +261,19 @@ def quiz_leaderboard_view(request, quiz_id):
 def create_quiz_from_db(request, class_id):
     myclass = get_object_or_404(MyClass, id=class_id)
     categories = Category.objects.all()
-    questions = QuestionGen.objects.all()
+    questions = Question.objects.filter(quiz_id=None)
     valid_questions = []
     for question in questions:
         if question.question_type == 'MCQ':
-            options = OptionGen.objects.filter(question_id=question.id)
+            options = Option.objects.filter(question_id=question.id)
             num_correct_options = options.filter(is_correct=True).count()
             num_incorrect_options = options.filter(is_correct=False).count()
             print(question.question_text, num_correct_options, num_incorrect_options)
-            if num_correct_options >= 1 or num_incorrect_options >= 3:
+            if num_correct_options >= 1 and num_incorrect_options >= 3:
                 valid_questions.append(question)
         else:
             valid_questions.append(question)
-    questions = QuestionGen.objects.filter(id__in=[question.id for question in valid_questions])
+    questions = Question.objects.filter(id__in=[question.id for question in valid_questions])
     if request.method == 'POST':
         quiz_title = request.POST.get('quiz_title')
         quiz_description = request.POST.get('quiz_description')
@@ -291,7 +290,7 @@ def create_quiz_from_db(request, class_id):
             class_id=myclass
         )
         for question_id in selected_questions:
-            question = QuestionGen.objects.get(id=question_id)
+            question = Question.objects.get(id=question_id)
             question = Question.objects.create(
                 quiz_id=quiz,
                 question_text=question.question_text,
@@ -302,7 +301,7 @@ def create_quiz_from_db(request, class_id):
                 subtopic=question.subtopic
             )
             if question.question_type == 'MCQ':
-                options = OptionGen.objects.filter(question_id=question_id)
+                options = Option.objects.filter(question_id=question_id)
                 for option in options:
                     Option.objects.create(
                         question_id=question,
@@ -369,8 +368,8 @@ def mark_quiz(request, class_id, quiz_id):
             if add_option:
                 question = Question.objects.get(id=answer.question_id_id)
                 print(question, question.question_text)
-                if not QuestionGen.objects.filter(question_text=question.question_text, question_type = 'MCQ').exists():
-                    new_question = QuestionGen.objects.create(
+                if not Question.objects.filter(question_text=question.question_text, question_type = 'MCQ').exists():
+                    new_question = Question.objects.create(
                             question_text=question.question_text,
                             CLO=question.CLO,
                             difficulty=question.difficulty,
@@ -380,14 +379,14 @@ def mark_quiz(request, class_id, quiz_id):
                             subtopic=question.subtopic
                         )
                     new_question.save()
-                    OptionGen.objects.create(
+                    Option.objects.create(
                         question_id=new_question,
                         option_text=answer.answer_text,
                         is_correct=answer.is_mark
                     )
                 else:
-                    old_question = QuestionGen.objects.get(question_text=question.question_text, question_type = 'MCQ')
-                    OptionGen.objects.create(
+                    old_question = Question.objects.get(question_text=question.question_text, question_type = 'MCQ')
+                    Option.objects.create(
                         question_id=old_question,
                         option_text=answer.answer_text,
                         is_correct=answer.is_mark
@@ -469,9 +468,9 @@ def create_quiz_from_excel(request):
         except IndexError:
             return render(request, 'upload_error.html', {'error': 'Không tìm thấy cột "DifLevel".'})
 
-        # Lưu các câu hỏi vào model QuestionGen
+        # Lưu các câu hỏi vào model Question
         for i in range(len(df_filtered)):
-            QuestionGen.objects.create(
+            Question.objects.create(
                 question_type=question_type,
                 question_text=question_texts.iloc[i],
                 topic=Topic.iloc[i],
