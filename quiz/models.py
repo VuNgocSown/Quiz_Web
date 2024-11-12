@@ -46,7 +46,7 @@ class Question(models.Model):
     id = models.AutoField(primary_key=True)
     question_type = models.CharField(max_length=3, choices=QUESTION_TYPES)
     CLO = models.IntegerField(default=1)
-    quiz_id = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    quiz_id = models.ForeignKey(Quiz, on_delete=models.CASCADE, null=True, blank=True)
     question_text = models.TextField()
     difficulty = models.IntegerField(default=1)
 
